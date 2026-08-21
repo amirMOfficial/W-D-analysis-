@@ -94,17 +94,15 @@ def build_message(
     )
 
     message = f"""
-<b>₿ BITCOIN — DAILY ANALYSIS</b>
-
+<b>₿ BITCOIN </b>
 🕒 <b>Daily Start:</b>
 {date_text} — {time_text} UTC+3:30
 
 ━━━━━━━━━━━━━━━━━━
-
-💰 <b>Bitcoin Price</b>
+💰 <b>Bitcoin Price:</b>
 {format_price(price)}
 
-📊 <b>Change vs Previous Daily Message</b>
+📊 <b>Change vs Previous Daily:</b>
 {change_text}
 
 😨 <b>Fear &amp; Greed</b>
@@ -112,8 +110,7 @@ def build_message(
 
 ━━━━━━━━━━━━━━━━━━
 
-<i>All available market data is from CoinMarketCap.</i>
-<i>Timeframe: Daily (1D)</i>
+
 """.strip()
 
     return message
