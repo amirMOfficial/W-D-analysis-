@@ -1,6 +1,7 @@
 import os
 import sys
 import requests
+import json
 
 
 URL = "https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest"
@@ -38,50 +39,87 @@ def main():
         print(f"HTTP STATUS: {response.status_code}")
         print()
 
+        print("RAW CMC RESPONSE:")
+        print("-" * 60)
+
         try:
             data = response.json()
+
+            # Safe debug:
+            # API key is NOT printed.
+            print(
+                json.dumps(
+                    data,
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+
         except Exception:
-            print("RAW RESPONSE:")
-            print(response.text[:1000])
+            print(response.text[:3000])
             sys.exit(1)
 
-        status = data.get("status", {})
-
-        print(
-            "CMC ERROR CODE:",
-            status.get("error_code"),
-        )
-
-        print(
-            "CMC ERROR MESSAGE:",
-            status.get("error_message"),
-        )
-
+        print("-" * 60)
         print()
 
         if response.status_code != 200:
             print("CMC REST API: FAILED")
             sys.exit(1)
 
-        if status.get("error_code", 0) != 0:
+        status = data.get("status") or {}
+
+        error_code = status.get("error_code")
+
+        print("CMC ERROR CODE:", error_code)
+        print(
+            "CMC ERROR MESSAGE:",
+            status.get("error_message"),
+        )
+
+        if error_code not in (None, 0):
+            print()
             print("CMC REST API: FAILED")
             sys.exit(1)
 
-        btc = data["data"]["1"]
-        quote = btc["quote"]["USD"]
+        btc_data = data.get("data")
 
-        print("CMC REST API: SUCCESS")
-        print()
-        print("Asset:", btc["name"])
-        print("Symbol:", btc["symbol"])
-        print(
-            "BTC Price:",
-            quote["price"],
+        if not btc_data:
+            print()
+            print("CMC returned no data.")
+            sys.exit(1)
+
+        btc = btc_data.get("1")
+
+        if not btc:
+            print()
+            print("Bitcoin data was not found.")
+            sys.exit(1)
+
+        quote = (
+            btc
+            .get("quote", {})
+            .get("USD", {})
         )
+
+        price = quote.get("price")
+
+        if price is None:
+            print()
+            print("BTC price was not found.")
+            sys.exit(1)
 
         print()
         print("=" * 60)
-        print("TEST SUCCESS")
+        print("CMC REST API: SUCCESS")
+        print("=" * 60)
+
+        print("Asset:", btc.get("name"))
+        print("Symbol:", btc.get("symbol"))
+        print(
+            "BTC Price:",
+            f"${float(price):,.2f}",
+        )
+
         print("=" * 60)
 
     except requests.RequestException as exc:
