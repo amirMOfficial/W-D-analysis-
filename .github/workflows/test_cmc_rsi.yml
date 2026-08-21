@@ -1,0 +1,28 @@
+name: Test CMC Daily RSI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-rsi:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Test CMC Daily RSI
+        env:
+          CMC_API_KEY: ${{ secrets.CMC_API_KEY }}
+        run: |
+          python test_cmc_rsi.py
