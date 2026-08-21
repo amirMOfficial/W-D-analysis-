@@ -98,10 +98,32 @@ def get_btc_price():
         },
     )
 
-    btc = payload["data"][BTC_ID]
-    quote = btc["quote"]["USD"]
+    data = payload.get("data", [])
 
-    return float(quote["price"])
+    if not data:
+        raise CMCError(
+            "CMC returned empty Bitcoin data."
+        )
+
+    btc = data[0]
+
+    quote_data = btc.get("quote", [])
+
+    if not quote_data:
+        raise CMCError(
+            "CMC returned empty quote data."
+        )
+
+    usd_quote = quote_data[0]
+
+    price = usd_quote.get("price")
+
+    if price is None:
+        raise CMCError(
+            "BTC price was not found in CMC response."
+        )
+
+    return float(price)
 
 
 def get_previous_daily_candle():
