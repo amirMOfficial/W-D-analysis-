@@ -68,18 +68,15 @@ def main():
 
         status = data.get("status") or {}
 
-        error_code = status.get("error_code")
+ error_code = status.get("error_code")
 
-        print("CMC ERROR CODE:", error_code)
-        print(
-            "CMC ERROR MESSAGE:",
-            status.get("error_message"),
-        )
+print("CMC ERROR CODE:", error_code)
+print("CMC ERROR MESSAGE:", status.get("error_message"))
 
-        if error_code not in (None, 0):
-            print()
-            print("CMC REST API: FAILED")
-            sys.exit(1)
+if error_code is not None and str(error_code) != "0":
+    print()
+    print("CMC REST API: FAILED")
+    sys.exit(1)
 
         btc_data = data.get("data")
 
