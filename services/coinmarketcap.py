@@ -1,9 +1,12 @@
 import os
 import time
+
 import requests
 
 
-CMC_BASE_URL = "https://pro-api.coinmarketcap.com"
+CMC_BASE_URL = (
+    "https://pro-api.coinmarketcap.com"
+)
 
 BTC_ID = "1"
 
@@ -16,23 +19,40 @@ class CMCError(Exception):
     pass
 
 
-def _request(endpoint, params=None, retries=3):
-    api_key = os.getenv("CMC_API_KEY")
+# ============================================================
+# REQUEST
+# ============================================================
+
+def _request(
+    endpoint,
+    params=None,
+    retries=3,
+):
+    api_key = os.getenv(
+        "CMC_API_KEY"
+    )
 
     if not api_key:
-        raise CMCError("CMC_API_KEY is not configured.")
+        raise CMCError(
+            "CMC_API_KEY is not configured."
+        )
 
     headers = {
         **HEADERS,
         "X-CMC_PRO_API_KEY": api_key,
     }
 
-    url = f"{CMC_BASE_URL}{endpoint}"
+    url = (
+        f"{CMC_BASE_URL}"
+        f"{endpoint}"
+    )
 
     last_error = None
 
     for attempt in range(retries):
+
         try:
+
             response = requests.get(
                 url,
                 headers=headers,
@@ -40,56 +60,134 @@ def _request(endpoint, params=None, retries=3):
                 timeout=30,
             )
 
+            # ------------------------------------------------
+            # HTTP SUCCESS
+            # ------------------------------------------------
+
             if response.status_code == 200:
+
                 payload = response.json()
 
-                status = payload.get("status", {})
+                status = (
+                    payload.get("status")
+                    or {}
+                )
 
-                if status.get("error_code", 0) != 0:
-                    raise CMCError(
+                error_code = (
+                    status.get(
+                        "error_code"
+                    )
+                )
+
+                # CMC can return "0" or 0.
+                if (
+                    error_code is not None
+                    and str(error_code) != "0"
+                ):
+
+                    error_message = (
                         status.get(
-                            "error_message",
-                            "CMC returned an API error.",
+                            "error_message"
                         )
+                        or "CMC returned an API error."
+                    )
+
+                    # Retry temporary CMC errors.
+                    if str(error_code) == "500":
+
+                        last_error = (
+                            f"CMC error "
+                            f"{error_code}: "
+                            f"{error_message}"
+                        )
+
+                        time.sleep(
+                            2 ** attempt
+                        )
+
+                        continue
+
+                    raise CMCError(
+                        f"CMC error "
+                        f"{error_code}: "
+                        f"{error_message}"
                     )
 
                 return payload
 
-            if response.status_code in (429, 500, 502, 503, 504):
+            # ------------------------------------------------
+            # TEMPORARY HTTP ERRORS
+            # ------------------------------------------------
+
+            if response.status_code in (
+                429,
+                500,
+                502,
+                503,
+                504,
+            ):
+
                 last_error = (
-                    f"CMC HTTP {response.status_code}"
+                    f"CMC HTTP "
+                    f"{response.status_code}"
                 )
 
-                time.sleep(2 ** attempt)
+                time.sleep(
+                    2 ** attempt
+                )
+
                 continue
 
+            # ------------------------------------------------
+            # OTHER HTTP ERRORS
+            # ------------------------------------------------
+
             try:
-                error_data = response.json()
-                message = error_data.get(
-                    "status",
-                    {},
-                ).get(
-                    "error_message",
-                    response.text,
+
+                error_data = (
+                    response.json()
                 )
+
+                message = (
+                    error_data
+                    .get("status", {})
+                    .get(
+                        "error_message",
+                        response.text,
+                    )
+                )
+
             except Exception:
+
                 message = response.text
 
             raise CMCError(
-                f"CMC HTTP {response.status_code}: {message}"
+                f"CMC HTTP "
+                f"{response.status_code}: "
+                f"{message}"
             )
 
         except requests.RequestException as exc:
+
             last_error = str(exc)
-            time.sleep(2 ** attempt)
+
+            time.sleep(
+                2 ** attempt
+            )
 
     raise CMCError(
-        f"CMC request failed after {retries} attempts: "
+        "CMC request failed after "
+        f"{retries} attempts: "
         f"{last_error}"
     )
 
 
+# ============================================================
+# BTC PRICE
+# ============================================================
+
 def get_btc_price():
+
     payload = _request(
         "/v3/cryptocurrency/quotes/latest",
         {
@@ -98,7 +196,10 @@ def get_btc_price():
         },
     )
 
-    data = payload.get("data", [])
+    data = payload.get(
+        "data",
+        [],
+    )
 
     if not data:
         raise CMCError(
@@ -107,7 +208,10 @@ def get_btc_price():
 
     btc = data[0]
 
-    quote_data = btc.get("quote", [])
+    quote_data = btc.get(
+        "quote",
+        [],
+    )
 
     if not quote_data:
         raise CMCError(
@@ -116,73 +220,65 @@ def get_btc_price():
 
     usd_quote = quote_data[0]
 
-    price = usd_quote.get("price")
+    price = usd_quote.get(
+        "price"
+    )
 
     if price is None:
         raise CMCError(
-            "BTC price was not found in CMC response."
+            "BTC price was not found "
+            "in CMC response."
         )
 
     return float(price)
 
 
-def get_previous_daily_candle():
-    """
-    Returns the most recently completed UTC daily candle.
-
-    CMC documentation states that when querying backwards with
-    count, the active/incomplete daily period must be skipped.
-    Therefore count=2 is used.
-    """
-
-    payload = _request(
-        "/v2/cryptocurrency/ohlcv/historical",
-        {
-            "id": BTC_ID,
-            "time_period": "daily",
-            "interval": "daily",
-            "count": 2,
-            "convert": "USD",
-        },
-    )
-
-    btc = payload["data"]["1"]
-
-    quotes = btc["quotes"]
-
-    if len(quotes) < 2:
-        raise CMCError(
-            "Not enough daily OHLCV candles returned by CMC."
-        )
-
-    # CMC returns newest first in this endpoint.
-    # First candle can be the currently active day.
-    # Second one is the latest completed day.
-    candle = quotes[-2]
-
-    quote = candle["quote"]["USD"]
-
-    return {
-        "timestamp": candle["time_open"],
-        "open": float(quote["open"]),
-        "high": float(quote["high"]),
-        "low": float(quote["low"]),
-        "close": float(quote["close"]),
-        "volume": float(quote["volume"]),
-    }
-
+# ============================================================
+# FEAR & GREED
+# ============================================================
 
 def get_fear_greed():
+
     payload = _request(
         "/v3/fear-and-greed/latest"
     )
 
-    data = payload["data"]
+    data = payload.get(
+        "data"
+    )
+
+    if not isinstance(
+        data,
+        dict,
+    ):
+        raise CMCError(
+            "CMC returned invalid "
+            "Fear & Greed data."
+        )
+
+    value = data.get(
+        "value"
+    )
+
+    classification = data.get(
+        "value_classification"
+    )
+
+    update_time = data.get(
+        "update_time"
+    )
+
+    if value is None:
+        raise CMCError(
+            "Fear & Greed value "
+            "was not found."
+        )
 
     return {
-        "value": int(data["value"]),
-        "classification": data[
-            "value_classification"
-        ],
-        "update_time": data["update_time"],
-}
+        "value": int(value),
+        "classification": (
+            classification
+            or "Unknown"
+        ),
+        "update_time": update_time,
+    }
