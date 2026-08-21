@@ -7,14 +7,19 @@ on:
     # 00:00 UTC = 03:30 UTC+3:30
     - cron: "0 0 * * *"
 
+
 permissions:
   contents: write
 
+
 jobs:
+
   daily-analysis:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
@@ -40,6 +45,7 @@ jobs:
 
       - name: Save daily state
         run: |
+
           if git diff --quiet -- data/daily_state.json; then
             echo "No state changes."
             exit 0
@@ -49,5 +55,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add data/daily_state.json
-          git commit -m "Update daily BTC state"
+
+          git commit \
+            -m "Update daily BTC state"
+
           git push
