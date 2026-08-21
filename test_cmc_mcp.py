@@ -1,6 +1,7 @@
 import os
 import sys
 import asyncio
+import traceback
 import httpx
 
 from mcp import ClientSession
@@ -8,7 +9,6 @@ from mcp.client.streamable_http import streamable_http_client
 
 
 CMC_MCP_URL = "https://mcp.coinmarketcap.com/mcp"
-TA_TOOL_NAME = "get_crypto_technical_analysis"
 
 
 async def main():
@@ -24,17 +24,117 @@ async def main():
 
     headers = {
         "X-CMC-MCP-API-KEY": api_key,
+        "Accept": "application/json, text/event-stream",
     }
 
     try:
         timeout = httpx.Timeout(
-            30.0,
+            connect=30.0,
             read=120.0,
+            write=30.0,
+            pool=30.0,
         )
+
+        print("Creating HTTP client...")
 
         async with httpx.AsyncClient(
             headers=headers,
             timeout=timeout,
+            follow_redirects=True,
+        ) as http_client:
+
+            print("Connecting to CMC MCP...")
+
+            async with streamable_http_client(
+                CMC_MCP_URL,
+                http_client=http_client,
+            ) as streams:
+
+                read_stream, write_stream, _ = streams
+
+                print("HTTP connection established.")
+
+                async with ClientSession(
+                    read_stream,
+                    write_stream,
+                ) as session:
+
+                    print("Initializing MCP session...")
+
+                    init_result = await session.initialize()
+
+                    print("MCP INITIALIZE: OK")
+                    print()
+
+                    if init_result.serverInfo:
+                        print(
+                            f"SERVER: "
+                            f"{init_result.serverInfo.name}"
+                        )
+
+                        print(
+                            f"VERSION: "
+                            f"{init_result.serverInfo.version}"
+                        )
+
+                    print()
+                    print("Requesting available tools...")
+
+                    result = await session.list_tools()
+
+                    tools = result.tools
+
+                    print(f"TOOLS FOUND: {len(tools)}")
+                    print()
+
+                    for tool in tools:
+                        print(f"- {tool.name}")
+
+                    print()
+
+                    technical_analysis_found = any(
+                        tool.name == "get_crypto_technical_analysis"
+                        for tool in tools
+                    )
+
+                    if technical_analysis_found:
+                        print(
+                            "TECHNICAL ANALYSIS TOOL: FOUND"
+                        )
+
+                        print(
+                            "get_crypto_technical_analysis"
+                        )
+
+                    else:
+                        print(
+                            "TECHNICAL ANALYSIS TOOL: NOT FOUND"
+                        )
+
+                        sys.exit(1)
+
+                    print()
+                    print("=" * 60)
+                    print("CMC MCP TEST: SUCCESS")
+                    print("=" * 60)
+
+    except* Exception as group:
+        print()
+        print("=" * 60)
+        print("CMC MCP TEST: FAILED")
+        print("=" * 60)
+
+        print()
+        print("FULL ERROR DETAILS:")
+        print()
+
+        traceback.print_exception(group)
+
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())            timeout=timeout,
             follow_redirects=True,
         ) as http_client:
 
