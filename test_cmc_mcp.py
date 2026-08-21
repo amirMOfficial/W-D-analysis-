@@ -101,16 +101,13 @@ async def main():
                         print(
                             "TECHNICAL ANALYSIS TOOL: FOUND"
                         )
-
                         print(
                             "get_crypto_technical_analysis"
                         )
-
                     else:
                         print(
                             "TECHNICAL ANALYSIS TOOL: NOT FOUND"
                         )
-
                         sys.exit(1)
 
                     print()
@@ -118,80 +115,16 @@ async def main():
                     print("CMC MCP TEST: SUCCESS")
                     print("=" * 60)
 
-    except* Exception as group:
+    except Exception:
         print()
         print("=" * 60)
         print("CMC MCP TEST: FAILED")
         print("=" * 60)
-
         print()
         print("FULL ERROR DETAILS:")
         print()
 
-        traceback.print_exception(group)
-
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())            timeout=timeout,
-            follow_redirects=True,
-        ) as http_client:
-
-            async with streamable_http_client(
-                CMC_MCP_URL,
-                http_client=http_client,
-            ) as (read_stream, write_stream, _):
-
-                async with ClientSession(
-                    read_stream,
-                    write_stream,
-                ) as session:
-
-                    print("Connecting to CMC MCP...")
-
-                    await session.initialize()
-
-                    print("CMC MCP CONNECTION: OK")
-                    print()
-
-                    print("Requesting available tools...")
-
-                    result = await session.list_tools()
-
-                    tools = result.tools
-
-                    print(f"TOOLS FOUND: {len(tools)}")
-                    print()
-
-                    for tool in tools:
-                        print(f"- {tool.name}")
-
-                    print()
-
-                    tool_names = {tool.name for tool in tools}
-
-                    if TA_TOOL_NAME in tool_names:
-                        print("TECHNICAL ANALYSIS TOOL: FOUND")
-                        print(f"Tool: {TA_TOOL_NAME}")
-                    else:
-                        print("TECHNICAL ANALYSIS TOOL: NOT FOUND")
-                        print(f"Expected: {TA_TOOL_NAME}")
-
-                        sys.exit(1)
-
-                    print()
-                    print("=" * 60)
-                    print("CMC MCP TEST: SUCCESS")
-                    print("=" * 60)
-
-    except Exception as exc:
-        print()
-        print("=" * 60)
-        print("CMC MCP TEST: FAILED")
-        print("=" * 60)
-        print(f"ERROR TYPE: {type(exc).__name__}")
-        print(f"ERROR: {exc}")
+        traceback.print_exc()
 
         sys.exit(1)
 
