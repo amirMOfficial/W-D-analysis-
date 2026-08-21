@@ -1,0 +1,26 @@
+name: Test CMC Fear and Greed
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-fear-greed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Test CMC Fear and Greed
+        run: |
+          python test_cmc_fear_greed.py
