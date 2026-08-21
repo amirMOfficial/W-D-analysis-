@@ -21,6 +21,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Show package versions
+        run: |
+          python --version
+          pip show mcp
+          pip show httpx
+
       - name: Test CoinMarketCap MCP
         env:
           CMC_API_KEY: ${{ secrets.CMC_API_KEY }}
