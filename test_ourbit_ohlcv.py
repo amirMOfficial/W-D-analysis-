@@ -14,7 +14,8 @@ def main():
     print("=" * 70)
 
     print()
-    print("Symbol: BTC/USDT")
+    print("Exchange: Ourbit")
+    print("Symbol: BTCUSDT")
     print("Timeframe: 1D")
     print("Requested candles: 10")
 
@@ -51,12 +52,13 @@ def main():
     print("=" * 70)
 
     # --------------------------------------------------------
-    # Try to identify common response structures.
+    # Identify candles
     # --------------------------------------------------------
 
     candles = None
 
     if isinstance(data, list):
+
         candles = data
 
     elif isinstance(data, dict):
@@ -77,13 +79,12 @@ def main():
                 candles = value
                 break
 
-    print()
-
     if not candles:
 
+        print()
         print(
-            "Response received, but candle array "
-            "could not be identified automatically."
+            "Response received, but candle data "
+            "could not be identified."
         )
 
         print(
@@ -92,12 +93,15 @@ def main():
 
         sys.exit(1)
 
+    print()
     print("=" * 70)
-    print("CANDLES FOUND:", len(candles))
+    print(
+        f"CANDLES FOUND: {len(candles)}"
+    )
     print("=" * 70)
 
     # --------------------------------------------------------
-    # Show latest candles without calculating anything.
+    # Print latest candles
     # --------------------------------------------------------
 
     for index, candle in enumerate(
@@ -106,7 +110,10 @@ def main():
     ):
 
         print()
-        print(f"CANDLE #{index}")
+        print(
+            f"CANDLE #{index}"
+        )
+
         print("-" * 70)
 
         print(
@@ -119,7 +126,7 @@ def main():
 
     print()
     print("=" * 70)
-    print("OURBIT OHLCV: RESPONSE RECEIVED")
+    print("OURBIT OHLCV: SUCCESS")
     print("=" * 70)
 
     print(
@@ -127,11 +134,11 @@ def main():
     )
 
     print(
-        "No OHLCV values were modified."
+        "No candle values were modified."
     )
 
     print(
-        "The response above is the raw Ourbit data."
+        "Raw Daily K-Line data received."
     )
 
     print("=" * 70)
