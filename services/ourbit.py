@@ -143,3 +143,56 @@ def format_candle_date(timestamp):
     return dt.strftime(
         "%Y-%m-%d"
     )
+
+def get_recent_1m_klines(limit=20):
+
+    url = f"{BASE_URL}/api/v3/klines"
+
+    params = {
+        "symbol": SYMBOL,
+        "interval": "1m",
+        "limit": limit,
+    }
+
+    try:
+
+        response = requests.get(
+            url,
+            params=params,
+            timeout=30,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "W-D-analysis/1.0",
+            },
+        )
+
+    except requests.RequestException as exc:
+
+        raise OurbitError(
+            f"Request failed: {exc}"
+        ) from exc
+
+    if response.status_code != 200:
+
+        raise OurbitError(
+            f"HTTP {response.status_code}: "
+            f"{response.text[:1000]}"
+        )
+
+    try:
+
+        data = response.json()
+
+    except ValueError as exc:
+
+        raise OurbitError(
+            "Ourbit returned invalid JSON."
+        ) from exc
+
+    if not isinstance(data, list):
+
+        raise OurbitError(
+            "Unexpected Ourbit K-Line response."
+        )
+
+    return data
